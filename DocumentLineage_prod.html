@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Document Lineage of the Bible - from 1000 BCE to 2025(present)</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --panel:#121a2a; --ink:#eef3ff; --muted:#a8b6d8; --grid:#213154; --link:#6ea2ff;
+    --manus:#a5ff9f; --codex:#7fffd4; --trans:#ffd47a; --hypo:#ff9fb3; --family:#cda6ff; --edition:#9fd0ff; --oral:#ffa7a7;
+    --chip:#0f1730; --chip-b:#2a3b6f; --chip-on:#2a4fff; --chip-on-b:#6ea2ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;background:linear-gradient(180deg,#0b0f1a,#0d1223);color:var(--ink)}
+  header{display:flex;flex-direction:column;gap:10px;align-items:flex-start;padding:16px;border-bottom:1px solid #1e2a47}
+  h1{margin:0;font-size:30px;letter-spacing:.3px;text-align:left}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .card{background:var(--panel);border:1px solid #1e2a47;border-radius:14px;padding:10px 12px}
+  select,button,input[type="text"]{appearance:none;background:#0f1730;border:1px solid #2a3b6f;color:var(--ink);padding:8px 10px;border-radius:10px}
+  button{cursor:pointer}
+  main{display:grid;grid-template-columns:260px 1fr 440px;gap:14px;padding:14px}
+  @media (max-width: 1280px){main{grid-template-columns:300px 1fr}}
+  @media (max-width: 1000px){main{grid-template-columns:1fr}}
+  .sidebar{display:flex;flex-direction:column;gap:14px}
+  .viz{height:74vh;min-height:560px;background:radial-gradient(1200px 600px at 10% 10%,rgba(110,162,255,.12),transparent),radial-gradient(900px 500px at 90% 20%,rgba(205,166,255,.1),transparent)}
+  .tooltip{position:absolute;pointer-events:none;background:#0e1633;border:1px solid #2a3a79;border-radius:12px;padding:10px 12px;color:#eaf0ff;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .tooltip .name{font-weight:700;font-size:14px;margin-bottom:4px}
+  .laneRect{fill:#0c142e;fill-opacity:.15;stroke:none}
+  .laneLabel{fill:#cfe0ff;font-size:12px}
+  .link{fill:none;stroke:var(--link);stroke-opacity:.45;stroke-width:1.2px;mix-blend-mode:screen}
+  .nodeDot{stroke:#0a0f1c;stroke-width:1.2px}
+  .nodeDot:hover{filter:brightness(1.15)}
+  .search{display:flex;gap:8px}
+  .search input{flex:1}
+  /* Toggle chips for filters */
+  .filter-grid{display:grid;grid-template-columns:1fr;gap:6px;margin-top:8px}
+  .chip{display:flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--chip-b);padding:6px 9px;border-radius:999px;cursor:pointer;user-select:none;transition:all .18s;font-size:12px}
+  .chip input{display:none}
+  .chip .dot{width:10px;height:10px;border-radius:999px;background:#55639f}
+  .chip.active{box-shadow:0 0 0 1px inset rgba(0,0,0,.15)}
+  .chip.active .dot{background:#0a0f1c}
+  .chip.active[data-type="oral"]{background:var(--oral);border-color:var(--oral);color:#0a0f1c}
+  .chip.active[data-type="hypothetical"]{background:var(--hypo);border-color:var(--hypo);color:#0a0f1c}
+  .chip.active[data-type="manuscript"]{background:var(--manus);border-color:var(--manus);color:#0a0f1c}
+  .chip.active[data-type="codex"]{background:var(--codex);border-color:var(--codex);color:#0a0f1c}
+  .chip.active[data-type="translation"]{background:var(--trans);border-color:var(--trans);color:#0a0f1c}
+  .chip.active[data-type="family"]{background:var(--family);border-color:var(--family);color:#0a0f1c}
+  .chip.active[data-type="edition"]{background:var(--edition);border-color:var(--edition);color:#0a0f1c}
+  /* Timeline axis */
+  .timeAxis text{fill:#cfe0ff;font-size:12px;font-variant-numeric: lining-nums tabular-nums;font-feature-settings:'lnum','tnum'}
+  .timeAxis path,.timeAxis line{stroke:#4a66a8}
+  /* Ranges & chains */
+  .rangeBar{stroke:#ffffff;stroke-opacity:.55;stroke-width:2px}
+  .rangeCap{stroke:#ffffff;stroke-opacity:.55;stroke-width:2px}
+  .eventBar{stroke:#ffb35c;stroke-opacity:.9;stroke-width:2px}
+  .eventCap{stroke:#ffb35c;stroke-opacity:.9;stroke-width:2px}
+  .eventLink{stroke:#ffb35c;stroke-opacity:.55;stroke-dasharray:2 2;mix-blend-mode:screen}
+  .eventDot{fill:#ffcc80;stroke:#0a0f1c;stroke-width:1}
+  .discoverLink{stroke:#6ea2ff;stroke-opacity:.45;stroke-dasharray:3 3;mix-blend-mode:screen}
+  .discoverDot{fill:#b3c7ff;stroke:#0a0f1c;stroke-width:1}
+  .catalogLink{stroke:#cda6ff;stroke-opacity:.5;stroke-dasharray:3 2;mix-blend-mode:screen}
+  .catalogDot{fill:#cda6ff;stroke:#0a0f1c;stroke-width:1}
+  /* Current location chain */
+  .currentLink{stroke:#6ed39f;stroke-opacity:.55;stroke-dasharray:4 2;mix-blend-mode:screen}
+  .currentDot{fill:#6ed39f;stroke:#0a0f1c;stroke-width:1}
+  /* Keep strokes thin under zoom */
+  .link,.discoverLink,.catalogLink,.eventLink,.rangeBar,.rangeCap,.eventBar,.eventCap{vector-effect:non-scaling-stroke;stroke-linecap:round;fill:none}
+  .link,.discoverLink,.catalogLink,.eventLink{pointer-events:none}
+  /* Globe */
+  .globe{height:74vh;min-height:560px;display:flex;flex-direction:column;gap:10px;align-items:center}
+  .globe h3{margin:0 0 6px 0;font-size:14px;color:#cfe0ff;text-align:center}
+  .globe .note{font-size:12px;color:#a8b6d8}
+  .globe svg{width:100%;height:auto;aspect-ratio:1/1;background:radial-gradient(600px 400px at 30% 20%,rgba(110,162,255,.08),transparent);display:block;margin-inline:auto}
+  .globe .list{font-size:12px;color:#cfe0ff;line-height:1.35}
+  .globe .btnRow{display:flex;gap:8px;flex-wrap:wrap}
+  .refsList{max-height:260px;overflow:auto;font-size:12px;line-height:1.35;padding-right:6px}
+  .refsList .refItem{margin:4px 0;border-bottom:1px dashed #2a3b6f;padding-bottom:4px}
+  .footer{position:fixed;bottom:8px;right:10px;color:#a8b6d8;font-size:11px;opacity:.85;pointer-events:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Document Lineage of the Bible - from 1000 BCE to 2025(present)</h1>
+  <div class="controls card">
+    <button id="btnReset">Reset View</button>
+    <button id="btnExport">Export SVG</button>
+  </div>
+</header>
+<main>
+  <aside class="sidebar">
+    <div class="card">
+      <strong>Filters</strong>
+      <div class="filter-grid" id="filterGrid">
+        <label class="chip active" data-type="oral"><span class="dot"></span> Oral<input type="checkbox" class="f-type" value="oral" checked></label>
+        <label class="chip active" data-type="hypothetical"><span class="dot"></span> Hypothetical<input type="checkbox" class="f-type" value="hypothetical" checked></label>
+        <label class="chip active" data-type="manuscript"><span class="dot"></span> Manuscripts<input type="checkbox" class="f-type" value="manuscript" checked></label>
+        <label class="chip active" data-type="codex"><span class="dot"></span> Codices<input type="checkbox" class="f-type" value="codex" checked></label>
+        <label class="chip active" data-type="translation"><span class="dot"></span> Translations<input type="checkbox" class="f-type" value="translation" checked></label>
+        <label class="chip active" data-type="family"><span class="dot"></span> Text Families<input type="checkbox" class="f-type" value="family" checked></label>
+        <label class="chip active" data-type="edition"><span class="dot"></span> Critical Editions<input type="checkbox" class="f-type" value="edition" checked></label>
+      </div>
+    </div>
+    <div class="card" id="refsCard">
+      <strong>Current Locations</strong>
+      <div class="tip" style="margin-top:6px">Current holding locations for visible items.</div>
+      <div id="refsList" class="refsList"></div>
+    </div>
+  </aside>
+  <section class="card viz" id="viz"></section>
+  <aside class="card globe" id="globePanel">
+    <div class="search" style="margin-bottom:6px"><input id="search" placeholder="Search manuscripts/translations (e.g., LXX, Sinaiticus, Vulgate, NA, KJV, NIV)"/><button id="btnSearch">Go</button></div>
+    <h3>Document Location Lineage</h3>
+    <svg id="globe" viewBox="0 0 420 420"></svg>
+    <div class="btnRow">
+      <button id="globeCenterEvent">Original Event</button>
+      <button id="globeCenterComp">Written</button>
+      <button id="globeCenterDisc">First Discovery</button>
+      <button id="globeCenterCat">First Catalog</button>
+      <button id="globeCenterCur">Current</button>
+    </div>
+    <div class="list" id="globeInfo">Click any dot to focus composition, discovery & catalog locations. (Locations are approximate.)</div>
+  </aside>
+</main>
+<div class="footer">Created by TES and ChatGPT-5 8.10.2025</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<script>
+// Lightweight event bus so the two visuals don't call each other directly
+const BUS = (()=>{ const L={}; return { on:(t,fn)=>((L[t]=L[t]||[]).push(fn)), emit:(t,p)=>((L[t]||[]).forEach(f=>f(p))) }; })();
+
+// ----------------- Data -----------------
+// year: negative = BCE, positive = CE. For ranges, use start/end.
+// lane is derived automatically from the **language** of composition.
+// type: oral, hypothetical, manuscript, codex, translation, family, edition
+
+const NODES = [
+  // OT stream (Hebrew / Aramaic base)
+  {id:"proto-hebrew", label:"Early Hebrew Scriptures", type:"manuscript", start:-1000, end:-500, lang:"Hebrew", compPlace:"Ancient Israel/Judah (approx.)", compLat:31.78, compLon:35.23, eventStart:-1000, eventEnd:-500, eventPlace:"Ancient Israel/Judah (events referenced)", eventLat:31.78, eventLon:35.23, note:"Pre/exilic Hebrew textual traditions (lost exemplars).", currentPlace:"—"},
+  {id:"ketef-hinnom", label:"Ketef Hinnom Silver Scrolls", type:"manuscript", start:-650, end:-600, lang:"Hebrew", compPlace:"Jerusalem (Ketef Hinnom)", compLat:31.77, compLon:35.23, discoveries:[{year:1979,place:"Jerusalem (Ketef Hinnom)",lat:31.77,lon:35.23}], eventStart:-700, eventEnd:-600, eventPlace:"Priestly cult in Judah (approx.)", eventLat:31.78, eventLon:35.23, note:"Earliest known text with the Priestly Blessing (Num 6).", eventRefs:"Numbers 6:24–26", currentPlace:"Israel Museum, Jerusalem", currentLat:31.77, currentLon:35.2},
+  {id:"nash-papyrus", label:"Nash Papyrus (~150–100 BCE)", type:"manuscript", start:-150, end:-100, lang:"Hebrew", compPlace:"Egypt (prob. Fayyum)", compLat:29.31, compLon:30.84, discoveries:[{year:1898,place:"Egypt (acquired 1902; Cambridge)",lat:30.04,lon:31.24}], eventStart:-500, eventEnd:-100, eventPlace:"Liturgical recitation (Shema/Ten Words)", eventLat:31.78, eventLon:35.23, note:"Ten Commandments + Shema; oldest Hebrew Bible text pre-DSS.", currentPlace:"Cambridge University Library", currentLat:52.205, currentLon:0.1218},
+  {id:"samaritan-pent", label:"Samaritan Pentateuch", type:"manuscript", start:-200, end:100, lang:"Hebrew", compPlace:"Samaria/Levant (approx.)", compLat:32.23, compLon:35.28, eventStart:-1200, eventEnd:-400, eventPlace:"Pentateuchal events (Levant)", eventLat:31.8, eventLon:35.2},
+  {id:"dss", label:"Dead Sea Scrolls", type:"manuscript", start:-250, end:50, lang:"Hebrew/Aramaic", compPlace:"Qumran vicinity", compLat:31.74, compLon:35.46, discoveries:[{year:1947,place:"Qumran (Dead Sea)",lat:31.74,lon:35.46}], eventStart:-300, eventEnd:70, eventPlace:"Qumran community life/events (approx.)", eventLat:31.74, eventLon:35.46, currentPlace:"Israel Museum / Shrine of the Book", currentLat:31.77, currentLon:35.2},
+  {id:"great-isaiah", label:"Great Isaiah Scroll (1QIsaᵃ)", type:"manuscript", start:-150, end:-100, lang:"Hebrew", compPlace:"Qumran Cave 1", compLat:31.74, compLon:35.46, discoveries:[{year:1947,place:"Qumran Cave 1",lat:31.74,lon:35.46}], eventStart:-740, eventEnd:-681, eventPlace:"Prophetic ministry of Isaiah (trad.)", eventLat:31.78, eventLon:35.23, eventRefs:"Isaiah 1–66 (esp. 40–66)", currentPlace:"Israel Museum (Jerusalem)", currentLat:31.77, currentLon:35.2},
+  {id:"mt-tradition", label:"Masoretic Tradition", type:"family", start:600, end:1000, lang:"Hebrew", compPlace:"Tiberias & Babylonian centers (approx.)", compLat:32.79, compLon:35.53},
+  {id:"codex-cairensis", label:"Codex Cairensis (Prophets, 895)", type:"codex", start:895, end:895, lang:"Hebrew", compPlace:"Tiberias (trad.)", compLat:32.79, compLon:35.53, discoveries:[{year:1099,place:"Jerusalem (seized by Crusaders)",lat:31.78,lon:35.23}], catalogs:[{year:1900,place:"Cairo Karaite Synagogue (cataloged)",lat:30.02,lon:31.23}], eventStart:-740, eventEnd:-500, eventPlace:"Prophets in Israel/Judah (trad.)", eventLat:31.78, eventLon:35.23, currentPlace:"Cairo Karaite Synagogue", currentLat:30.02, currentLon:31.23},
+  {id:"mt-aleppo", label:"Aleppo Codex (~930)", type:"codex", start:930, end:930, lang:"Hebrew", compPlace:"Tiberias (trad.)", compLat:32.79, compLon:35.53, discoveries:[{year:1958,place:"Jerusalem (public rediscovery)",lat:31.78,lon:35.23}], currentPlace:"Israel Museum (Jerusalem)", currentLat:31.77, currentLon:35.2},
+  {id:"babylonicus-petropolitanus", label:"Codex Babylonicus Petropolitanus (916)", type:"codex", start:916, end:916, lang:"Hebrew", compPlace:"Babylonia (trad.)", compLat:32.0, compLon:45.0, catalogs:[{year:1876,place:"St. Petersburg (cataloged)",lat:59.94,lon:30.31}], currentPlace:"St. Petersburg", currentLat:59.94, currentLon:30.31},
+  {id:"mt-leningrad", label:"Codex Leningradensis (1008)", type:"codex", start:1008, end:1008, lang:"Hebrew", compPlace:"Cairo (Fustat)", compLat:30.02, compLon:31.23, discoveries:[{year:1863,place:"St. Petersburg (cataloged)",lat:59.94,lon:30.31}], currentPlace:"St. Petersburg (National Library of Russia)", currentLat:59.94, currentLon:30.31},
+  {id:"targums", label:"Targums", type:"translation", start:100, end:500, lang:"Aramaic", compPlace:"Levant & Mesopotamia (approx.)", compLat:33.5, compLon:36.3, eventStart:-500, eventEnd:100, eventPlace:"Synagogue readings in Aramaic", eventLat:31.8, eventLon:35.2},
+
+  // Greek OT (LXX)
+  {id:"lxx", label:"Septuagint (LXX)", type:"translation", start:-250, end:-100, lang:"Greek", compPlace:"Alexandria", compLat:31.2, compLon:29.9, eventStart:-1200, eventEnd:-400, eventPlace:"Hebrew Bible narratives (Levant)", eventLat:31.8, eventLon:35.2, eventRefs:"Pentateuch, Prophets, Writings (Greek translation)"},
+  {id:"marchalianus", label:"Codex Marchalianus (LXX Prophets, 6th c.)", type:"codex", start:520, end:580, lang:"Greek", compPlace:"Egypt (prob.)", compLat:30.05, compLon:31.25, catalogs:[{year:1600,place:"Vatican Library (cataloged)",lat:41.90,lon:12.45}], eventStart:-740, eventEnd:-500, eventPlace:"Prophets in Israel/Judah (trad.)", eventLat:31.78, eventLon:35.23, currentPlace:"Vatican Library", currentLat:41.9, currentLon:12.45},
+
+  // NT stream (Greek base)
+  {id:"oral-jesus", label:"Oral Jesus Traditions", type:"oral", start:30, end:60, lang:"Aramaic/Greek", compPlace:"Galilee/Judea (oral)", compLat:31.7, compLon:35.2, eventStart:27, eventEnd:33, eventPlace:"Ministry of Jesus (Galilee/Judea)", eventLat:31.7, eventLon:35.2, eventRefs:"Gospel pericopes later in Mt/Mk/Lk"},
+  {id:"paul-letters", label:"Pauline Letters (50–67)", type:"manuscript", start:50, end:67, lang:"Greek", compPlace:"Aegean basin (itinerant)", compLat:38.0, compLon:24.0, eventStart:30, eventEnd:67, eventPlace:"Pauline mission (Aegean)", eventLat:38.0, eventLon:24.0, eventRefs:"Pauline epistles (Romans–Philemon)"},
+  {id:"mark", label:"Gospel of Mark (65–75)", type:"manuscript", start:65, end:75, lang:"Greek", compPlace:"Rome or Syria (debated)", compLat:41.9, compLon:12.5, eventStart:27, eventEnd:33, eventPlace:"Gospel events (Judea/Galilee)", eventLat:31.7, eventLon:35.2, eventRefs:"Gospel of Mark"},
+  {id:"q", label:"Q Source (hyp.)", type:"hypothetical", start:50, end:70, lang:"Greek/Aramaic?", compPlace:"—", eventStart:27, eventEnd:33, eventPlace:"Sayings tradition locales (Galilee/Judea)", eventLat:31.7, eventLon:35.2},
+  {id:"m-src", label:"M Source (hyp.)", type:"hypothetical", start:60, end:90, lang:"Greek/Aramaic?", compPlace:"—", eventStart:27, eventEnd:33, eventPlace:"Traditions for Matthew", eventLat:31.7, eventLon:35.2},
+  {id:"l-src", label:"L Source (hyp.)", type:"hypothetical", start:60, end:90, lang:"Greek/Aramaic?", compPlace:"—", eventStart:27, eventEnd:33, eventPlace:"Traditions for Luke", eventLat:31.7, eventLon:35.2},
+  {id:"matthew", label:"Gospel of Matthew (70–90)", type:"manuscript", start:70, end:90, lang:"Greek", compPlace:"Syria (trad. Antioch)", compLat:36.2, compLon:37.2, eventStart:27, eventEnd:33, eventPlace:"Gospel events (Judea/Galilee)", eventLat:31.7, eventLon:35.2, eventRefs:"Gospel of Matthew"},
+  {id:"luke", label:"Gospel of Luke (70–90)", type:"manuscript", start:70, end:90, lang:"Greek", compPlace:"Achaia/Asia Minor (trad.)", compLat:37.9, compLon:23.7, eventStart:-6, eventEnd:62, eventPlace:"Gospel events & Acts (Levant/Aegean)", eventLat:35.0, eventLon:34.0, eventRefs:"Gospel of Luke; Acts (overlapping events)"},
+  {id:"john", label:"Gospel of John (90–110)", type:"manuscript", start:90, end:110, lang:"Greek", compPlace:"Ephesus (trad.)", compLat:37.95, compLon:27.37, eventStart:27, eventEnd:33, eventPlace:"Gospel events (Judea/Galilee)", eventLat:31.7, eventLon:35.2, eventRefs:"Gospel of John"},
+  {id:"diatessaron", label:"Diatessaron (~170)", type:"translation", start:160, end:180, lang:"Syriac", compPlace:"Edessa (Urfa)", compLat:37.15, compLon:38.79, eventStart:27, eventEnd:110, eventPlace:"Four Gospels harmonized (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0, eventRefs:"Harmonization of the four Gospels"},
+  {id:"early-papyri", label:"Early NT Papyri (2nd–3rd c.)", type:"manuscript", start:125, end:300, lang:"Greek", compPlace:"Egypt (Oxyrhynchus, etc.)", compLat:28.54, compLon:30.80, discoveries:[{year:1896,place:"Oxyrhynchus, Egypt",lat:28.54,lon:30.80}], eventStart:27, eventEnd:120, eventPlace:"Earliest Christian communities (Levant/Aegean)", eventLat:35.5, eventLon:33.0},
+  {id:"p52", label:"Papyrus ¹52 (Rylands, John, ~125)", type:"manuscript", start:100, end:160, lang:"Greek", compPlace:"Egypt (prob.)", compLat:26.0, compLon:32.0, discoveries:[{year:1920,place:"Egypt (acquired for Rylands)",lat:30.04,lon:31.24}], catalogs:[{year:1935,place:"Manchester (Rylands Library)",lat:53.48,lon:-2.24}], eventStart:27, eventEnd:33, eventPlace:"Gospel events (Judea/Galilee)", eventLat:31.7, eventLon:35.2, currentPlace:"John Rylands Library, Manchester", currentLat:53.48, currentLon:-2.24},
+  {id:"p45", label:"Papyrus ¹45 (Chester Beatty, Gospels/Acts)", type:"manuscript", start:200, end:300, lang:"Greek", compPlace:"Egypt (Aphroditopolis?)", compLat:28.9, compLon:30.9, discoveries:[{year:1931,place:"Egypt (to Chester Beatty)",lat:30.04,lon:31.24}], eventStart:-6, eventEnd:60, eventPlace:"Gospels & Acts events (Levant/Aegean)", eventLat:35.0, eventLon:34.0},
+  {id:"p46", label:"Papyrus ¹46 (Chester Beatty, Paul)", type:"manuscript", start:175, end:225, lang:"Greek", compPlace:"Egypt (Fayyum?)", compLat:29.3, compLon:30.8, discoveries:[{year:1931,place:"Egypt (to Chester Beatty)",lat:30.04,lon:31.24}], eventStart:30, eventEnd:67, eventPlace:"Pauline mission (Aegean)", eventLat:38.0, eventLon:24.0},
+  {id:"p47", label:"Papyrus ¹47 (Chester Beatty, Revelation)", type:"manuscript", start:250, end:300, lang:"Greek", compPlace:"Egypt", compLat:26.0, compLon:32.0, discoveries:[{year:1930,place:"Egypt (to Chester Beatty)",lat:30.04,lon:31.24}], eventStart:90, eventEnd:110, eventPlace:"Revelation (Patmos/Asia Minor, trad.)", eventLat:37.3, eventLon:26.6},
+  {id:"p66", label:"Papyrus ¹66 (Bodmer, John)", type:"manuscript", start:150, end:250, lang:"Greek", compPlace:"Jabal Abu Mana (Dishna)", compLat:26.32, compLon:32.28, discoveries:[{year:1952,place:"Dishna area, Egypt",lat:26.32,lon:32.28}], eventStart:27, eventEnd:33, eventPlace:"Gospel events (Judea/Galilee)", eventLat:31.7, eventLon:35.2},
+  {id:"p72", label:"Papyrus ¹72 (Bodmer, 1-2 Peter/Jude)", type:"manuscript", start:250, end:325, lang:"Greek", compPlace:"Egypt (Dishna)", compLat:26.32, compLon:32.28, discoveries:[{year:1952,place:"Dishna, Egypt",lat:26.32,lon:32.28}], eventStart:60, eventEnd:110, eventPlace:"Petrine/Jude contexts (Levant)", eventLat:31.7, eventLon:35.2},
+  {id:"p75", label:"Papyrus ¹75 (Bodmer, Luke/John)", type:"manuscript", start:175, end:225, lang:"Greek", compPlace:"Egypt (Dishna)", compLat:26.32, compLon:32.28, discoveries:[{year:1950,place:"Egypt (Bodmer collection)",lat:26.32,lon:32.28}], catalogs:[{year:2007,place:"Vatican Library (donated)",lat:41.90,lon:12.45}], eventStart:-6, eventEnd:33, eventPlace:"Gospel events (Judea/Galilee)", eventLat:31.7, eventLon:35.2, currentPlace:"Vatican Library", currentLat:41.90, currentLon:12.45},
+  {id:"vaticanus", label:"Codex Vaticanus (B)", type:"codex", start:340, end:360, lang:"Greek", compPlace:"Egypt (prob.)", compLat:30.05, compLon:31.25, discoveries:[{year:1475,place:"Vatican Library (cataloged)",lat:41.90,lon:12.45}], eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0, currentPlace:"Vatican Library", currentLat:41.90, currentLon:12.45},
+  {id:"sinaiticus", label:"Codex Sinaiticus (א)", type:"codex", start:330, end:360, lang:"Greek", compPlace:"Egypt", compLat:30.0, compLon:31.2, discoveries:[{year:1844,place:"St Catherine's Monastery, Sinai",lat:28.555,lon:33.975},{year:1859,place:"Further leaves to St Petersburg",lat:59.94,lon:30.31}], eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0, currentPlace:"Multiple (BL London, Leipzig, St Catherine's)", currentLat:51.50, currentLon:-0.12},
+  {id:"alexandrinus", label:"Codex Alexandrinus (A)", type:"codex", start:400, end:440, lang:"Greek", compPlace:"Alexandria", compLat:31.2, compLon:29.9, discoveries:[{year:1627,place:"Arrived London (British Library)",lat:51.50,lon:-0.12}], eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0, currentPlace:"British Library, London", currentLat:51.50, currentLon:-0.12},
+  {id:"ephraemi", label:"Codex Ephraemi Rescriptus (C)", type:"codex", start:450, end:460, lang:"Greek", compPlace:"Constantinople (prob.)", compLat:41.01, compLon:28.97, discoveries:[{year:1843,place:"Paris (Tischendorf decipherment)",lat:48.86,lon:2.35}], eventStart:-6, eventEnd:110, eventPlace:"NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0, currentPlace:"Paris (BnF)", currentLat:48.86, currentLon:2.35},
+  {id:"bezae", label:"Codex Bezae (D)", type:"codex", start:400, end:500, lang:"Greek/Latin", compPlace:"Syria or Egypt (prob.)", compLat:34.5, compLon:38.3, discoveries:[{year:1562,place:"Lyon (St Irenaeus Monastery)",lat:45.76,lon:4.84}], catalogs:[{year:1581,place:"Cambridge University (donated)",lat:52.20,lon:0.12}], eventStart:-6, eventEnd:110, eventPlace:"Gospels/Acts events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0, currentPlace:"Cambridge University Library", currentLat:52.20, currentLon:0.12},
+  {id:"claromontanus", label:"Codex Claromontanus (Dp, Paul)", type:"codex", start:500, end:600, lang:"Greek/Latin", compPlace:"Gaul (prob.)", compLat:46.6, compLon:2.2, discoveries:[{year:1582,place:"Clermont (Theodore Beza)",lat:49.38,lon:2.42}], catalogs:[{year:1650,place:"Paris (BnF)",lat:48.86,lon:2.35}], eventStart:30, eventEnd:67, eventPlace:"Pauline mission (Aegean)", eventLat:38.0, eventLon:24.0, currentPlace:"Paris (BnF)", currentLat:48.86, currentLon:2.35},
+  {id:"washingtonianus", label:"Codex Washingtonianus (W)", type:"codex", start:375, end:500, lang:"Greek", compPlace:"Egypt", compLat:26.0, compLon:32.0, discoveries:[{year:1906,place:"Egypt (purchased by Charles Freer)",lat:30.04,lon:31.24}], catalogs:[{year:1912,place:"Washington, DC (Freer Gallery)",lat:38.89,lon:-77.02}], eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2, currentPlace:"Smithsonian (Freer Gallery)", currentLat:38.89, currentLon:-77.02},
+  {id:"petropolitanus-purpureus", label:"Codex Petropolitanus Purpureus (N)", type:"codex", start:500, end:600, lang:"Greek", compPlace:"Syria/Constantinople (prob.)", compLat:36.5, compLon:37.1, discoveries:[{year:1896,place:"St Petersburg (assembled)",lat:59.94,lon:30.31}], eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2, currentPlace:"St Petersburg", currentLat:59.94, currentLon:30.31},
+  {id:"rossano", label:"Rossano Gospels (Purpureus)", type:"codex", start:500, end:600, lang:"Greek", compPlace:"Southern Italy (Calabria)", compLat:39.58, compLon:16.63, discoveries:[{year:1879,place:"Rossano Cathedral (rediscovered)",lat:39.58,lon:16.63}], eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2, currentPlace:"Rossano Cathedral Museum", currentLat:39.58, currentLon:16.63},
+  {id:"boernerianus", label:"Codex Boernerianus (Gᴩ, Paul)", type:"codex", start:800, end:900, lang:"Greek", compPlace:"Sankt Gallen (prob.)", compLat:47.42, compLon:9.37, catalogs:[{year:1730,place:"Dresden (cataloged)",lat:51.05,lon:13.74}], eventStart:30, eventEnd:67, eventPlace:"Pauline mission (Aegean)", eventLat:38.0, eventLon:24.0, currentPlace:"Dresden (SLUB)", currentLat:51.05, currentLon:13.74},
+  {id:"laudianus", label:"Codex Laudianus (E, Acts)", type:"codex", start:550, end:650, lang:"Greek/Latin", compPlace:"Italy (prob.)", compLat:41.9, compLon:12.5, catalogs:[{year:1636,place:"Oxford (Bodleian, gift of Laud)",lat:51.76,lon:-1.26}], eventStart:30, eventEnd:62, eventPlace:"Acts events (Levant/Aegean)", eventLat:35.0, eventLon:34.0, currentPlace:"Bodleian Library, Oxford", currentLat:51.76, currentLon:-1.26},
+
+  // Syriac
+  {id:"peshitta", label:"Peshitta", type:"translation", start:200, end:400, lang:"Syriac", compPlace:"Edessa (Urfa)", compLat:37.15, compLon:38.79, eventStart:-6, eventEnd:110, eventPlace:"Gospels & NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"old-syriac-sinaiticus", label:"Old Syriac — Sinaitic Palimpsest", type:"translation", start:350, end:450, lang:"Syriac", compPlace:"Sinai (St Catherine's)", compLat:28.555, compLon:33.975, discoveries:[{year:1892,place:"St Catherine's Monastery, Sinai",lat:28.555,lon:33.975}], eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2},
+  {id:"old-syriac-curetonian", label:"Old Syriac — Curetonian Gospels", type:"translation", start:400, end:500, lang:"Syriac", compPlace:"Nitrian Desert (Egypt)", compLat:30.22, compLon:30.29, discoveries:[{year:1842,place:"Dayr al-Suryan, Nitrian Desert (to British Museum)",lat:30.22,lon:30.29}], eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2},
+  {id:"philoxenian", label:"Philoxenian Version (508)", type:"translation", start:508, end:508, lang:"Syriac", compPlace:"Mabbug (Hierapolis)", compLat:36.52, compLon:38.94, eventStart:-6, eventEnd:110, eventPlace:"NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"harklean", label:"Harklean Version (616)", type:"translation", start:616, end:616, lang:"Syriac", compPlace:"Enaton Monastery (Egypt)", compLat:31.19, compLon:29.85, eventStart:-6, eventEnd:110, eventPlace:"NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"syro-hexapla", label:"Syro-Hexapla (616–617)", type:"translation", start:616, end:617, lang:"Syriac", compPlace:"Enaton (Egypt)", compLat:31.19, compLon:29.85, eventStart:-6, eventEnd:110, eventPlace:"NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+
+  // Latin & Old Latin
+  {id:"old-latin", label:"Old Latin (Vetus Latina)", type:"translation", start:150, end:380, lang:"Latin", compPlace:"Italy/North Africa (approx.)", compLat:41.9, compLon:12.5, eventStart:-6, eventEnd:110, eventPlace:"Gospel/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"vulgate", label:"Vulgate (Jerome)", type:"translation", start:382, end:405, lang:"Latin", compPlace:"Bethlehem / Rome", compLat:31.71, compLon:35.20, eventStart:-6, eventEnd:110, eventPlace:"Gospel/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"vercellensis", label:"Codex Vercellensis (Old Latin)", type:"codex", start:350, end:380, lang:"Latin", compPlace:"Vercelli (trad.)", compLat:45.33, compLon:8.42, catalogs:[{year:1778,place:"Vercelli Cathedral Treasury (cataloged)",lat:45.33,lon:8.42}], eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2, currentPlace:"Vercelli Cathedral", currentLat:45.33, currentLon:8.42},
+  {id:"bobiensis", label:"Codex Bobiensis (Old Latin)", type:"codex", start:375, end:425, lang:"Latin", compPlace:"North Africa (prob.)", compLat:36.75, compLon:3.06, discoveries:[{year:1751,place:"Bobbio Abbey (Italy)",lat:44.77,lon:9.39}], eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2, currentPlace:"Turin (Biblioteca Nazionale)", currentLat:45.07, currentLon:7.69},
+  {id:"amiatinus", label:"Codex Amiatinus (~700–716)", type:"codex", start:700, end:716, lang:"Latin", compPlace:"Wearmouth–Jarrow (England)", compLat:54.91, compLon:-1.50, discoveries:[{year:716,place:"Rome (gift to Pope)",lat:41.90,lon:12.45}], catalogs:[{year:1786,place:"Florence (Laurentian Library)",lat:43.77,lon:11.26}], eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0, currentPlace:"Florence (Laurentian Library)", currentLat:43.77, currentLon:11.26},
+  {id:"fuldensis", label:"Codex Fuldensis (546)", type:"codex", start:541, end:546, lang:"Latin", compPlace:"Italy (Capua) / Fulda", compLat:41.09, compLon:14.22, catalogs:[{year:1600,place:"Fulda (Landesbibliothek)",lat:50.55,lon:9.68}], eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0, currentPlace:"Fulda (Landesbibliothek)", currentLat:50.55, currentLon:9.68},
+
+  // Coptic / Armenian / Ethiopic / Gothic / Georgian
+  {id:"coptic-sahidic", label:"Coptic (Sahidic/Bohairic)", type:"translation", start:300, end:450, lang:"Coptic", compPlace:"Egypt", compLat:26.8, compLon:30.8, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant)", eventLat:31.7, eventLon:35.2},
+  {id:"coptic-glazier", label:"Codex Glazier (Acts, Coptic)", type:"codex", start:350, end:450, lang:"Coptic", compPlace:"Egypt (Middle Egyptian)", compLat:27.7, compLon:30.8, catalogs:[{year:1963,place:"Morgan Library (acquired)",lat:40.75,lon:-73.98}], eventStart:30, eventEnd:62, eventPlace:"Acts events (Levant/Aegean)", eventLat:35.0, eventLon:34.0, currentPlace:"Morgan Library, New York", currentLat:40.75, currentLon:-73.98},
+  {id:"armenian-bible", label:"Armenian Bible (5th c.)", type:"translation", start:405, end:450, lang:"Armenian", compPlace:"Etchmiadzin (approx.)", compLat:40.16, compLon:44.30, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"georgian-bible", label:"Georgian Bible (5th c.)", type:"translation", start:430, end:500, lang:"Georgian", compPlace:"Iberia (Kartli)", compLat:41.99, compLon:44.65, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"adysh-gospels", label:"Adysh Gospels (897)", type:"codex", start:897, end:897, lang:"Georgian", compPlace:"Adysh (Svaneti)", compLat:42.88, compLon:43.03, eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2, currentPlace:"Adysh (Svaneti)", currentLat:42.88, currentLon:43.03},
+  {id:"geez", label:"Geʽez (Ethiopic) Bible", type:"translation", start:400, end:700, lang:"Geʽez", compPlace:"Aksum (approx.)", compLat:14.12, compLon:38.72, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"garima", label:"Garima Gospels (c. 390–660)", type:"codex", start:390, end:660, lang:"Geʽez", compPlace:"Abba Garima Monastery", compLat:14.28, compLon:39.55, discoveries:[{year:1950,place:"Abba Garima (radiocarbon dated later)",lat:14.28,lon:39.55}], eventStart:-6, eventEnd:110, eventPlace:"Gospels events (Levant)", eventLat:31.7, eventLon:35.2, currentPlace:"Abba Garima Monastery", currentLat:14.28, currentLon:39.55},
+  {id:"slavonic", label:"Church Slavonic (Ostrog 1581)", type:"translation", start:1581, end:1581, lang:"Church Slavonic", compPlace:"Ostroh", compLat:50.32, compLon:26.52, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"gothic-argenteus", label:"Codex Argenteus (Gothic)", type:"codex", start:500, end:550, lang:"Gothic", compPlace:"Ravenna (prob.)", compLat:44.42, compLon:12.20, discoveries:[{year:1648,place:"Prague (discovered)",lat:50.08,lon:14.43}], catalogs:[{year:1662,place:"Uppsala (Carolina Rediviva)",lat:59.86,lon:17.63}], eventStart:-6, eventEnd:110, eventPlace:"Gospel events (Levant)", eventLat:31.7, eventLon:35.2, currentPlace:"Uppsala University Library", currentLat:59.86, currentLon:17.63},
+
+  // Text Families (Greek)
+  {id:"alexandrian", label:"Alexandrian Family", type:"family", start:200, end:900, lang:"Greek"},
+  {id:"western", label:"Western Family", type:"family", start:150, end:900, lang:"Greek/Latin"},
+  {id:"byzantine", label:"Byzantine Family", type:"family", start:400, end:1400, lang:"Greek"},
+
+  // Printed/critical editions
+  {id:"textus-receptus", label:"Textus Receptus (1516–1633)", type:"edition", start:1516, end:1633, lang:"Greek", compPlace:"Basel", compLat:47.56, compLon:7.59},
+  {id:"westcott-hort", label:"Westcott–Hort (1881)", type:"edition", start:1881, end:1881, lang:"Greek", compPlace:"Cambridge", compLat:52.21, compLon:0.12},
+  {id:"nestle-aland", label:"Nestle–Aland (1898→)", type:"edition", start:1898, end:2024, lang:"Greek", compPlace:"Stuttgart", compLat:48.78, compLon:9.18},
+  {id:"ubs", label:"UBS (1966→)", type:"edition", start:1966, end:2024, lang:"Greek", compPlace:"Münster", compLat:51.96, compLon:7.63},
+
+  // Translations (historic + modern)
+  {id:"lxx-trans", label:"Septuagint (LXX)", type:"translation", start:-250, end:-100, lang:"Greek", compPlace:"Alexandria", compLat:31.2, compLon:29.9, eventStart:-1200, eventEnd:-400, eventPlace:"Hebrew Bible narratives (Levant)", eventLat:31.8, eventLon:35.2},
+  {id:"vulgate-trans", label:"Vulgate (405)", type:"translation", start:382, end:405, lang:"Latin", compPlace:"Bethlehem / Rome", compLat:31.71, compLon:35.20, eventStart:-6, eventEnd:110, eventPlace:"Gospel/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"peshitta-trans", label:"Peshitta (c. 5th c.)", type:"translation", start:350, end:450, lang:"Syriac", compPlace:"Edessa (Urfa)", compLat:37.15, compLon:38.79, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events (Levant/Asia Minor)", eventLat:34.0, eventLon:34.0},
+  {id:"armenian-bible", label:"Armenian Bible (5th c.)", type:"translation", start:405, end:450, lang:"Armenian", compPlace:"Etchmiadzin (approx.)", compLat:40.16, compLon:44.30, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"coptic-sahidic-trans", label:"Coptic (Sahidic/Bohairic)", type:"translation", start:300, end:450, lang:"Coptic", compPlace:"Egypt", compLat:26.8, compLon:30.8, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"geez-trans", label:"Geʽez (Ethiopic) Bible", type:"translation", start:400, end:700, lang:"Geʽez", compPlace:"Aksum (approx.)", compLat:14.12, compLon:38.72, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"slavonic-trans", label:"Church Slavonic (Ostrog 1581)", type:"translation", start:1581, end:1581, lang:"Church Slavonic", compPlace:"Ostroh", compLat:50.32, compLon:26.52, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"luther", label:"Lutherbibel (1522–34)", type:"translation", start:1522, end:1534, lang:"German", compPlace:"Wittenberg", compLat:51.87, compLon:12.65, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"reina-valera", label:"Reina–Valera (1602→)", type:"translation", start:1602, end:1960, lang:"Spanish", compPlace:"Basel / Amsterdam (approx.)", compLat:47.56, compLon:7.59, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"kjv", label:"KJV (1611)", type:"translation", start:1611, end:1611, lang:"English", compPlace:"London", compLat:51.50, compLon:-0.12, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+
+  // Modern widely used English translations
+  {id:"niv", label:"NIV (1978)", type:"translation", start:1978, end:1978, lang:"English", compPlace:"Grand Rapids (approx.)", compLat:42.96, compLon:-85.67, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"esv", label:"ESV (2001)", type:"translation", start:2001, end:2001, lang:"English", compPlace:"Wheaton (approx.)", compLat:41.87, compLon:-88.10, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"nlt", label:"NLT (1996)", type:"translation", start:1996, end:1996, lang:"English", compPlace:"Carol Stream (approx.)", compLat:41.91, compLon:-88.13, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"nasb", label:"NASB (1971/1995/2020)", type:"translation", start:1971, end:2020, lang:"English", compPlace:"La Habra (approx.)", compLat:33.93, compLon:-117.95, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0},
+  {id:"csb", label:"CSB (2017)", type:"translation", start:2017, end:2017, lang:"English", compPlace:"Nashville (approx.)", compLat:36.16, compLon:-86.78, eventStart:-6, eventEnd:110, eventPlace:"Gospels/NT events", eventLat:34.0, eventLon:34.0}
+];
+
+// Build discoveries: allow multiple per node; also split catalog-style records
+const DISCOVERY = {
+  dss: [{year:1947, place:'Qumran (Dead Sea)', lat:31.74, lon:35.46}],
+  sinaiticus: [{year:1844, place:"St Catherine's Monastery, Sinai", lat:28.555, lon:33.975},{year:1859, place:'Leaves to St Petersburg', lat:59.94, lon:30.31}],
+  vaticanus: [{year:1475, place:'Vatican Library (cataloged)', lat:41.90, lon:12.45}],
+  alexandrinus: [{year:1627, place:'Arrived London (British Library)', lat:51.50, lon:-0.12}],
+  'early-papyri': [{year:1896, place:'Oxyrhynchus, Egypt', lat:28.54, lon:30.80}],
+  'mt-leningrad': [{year:1863, place:'St. Petersburg (cataloged)', lat:59.94, lon:30.31}],
+  'mt-aleppo': [{year:1958, place:'Jerusalem (public rediscovery)', lat:31.78, lon:35.23}]
+};
+NODES.forEach(n=>{ if(!n.discoveries && DISCOVERY[n.id]) n.discoveries = DISCOVERY[n.id]; });
+// Split "catalog" hints
+NODES.forEach(n=>{
+  if(n.discoveries){
+    n.catalogs = n.catalogs || [];
+    n.discoveries = n.discoveries.filter(rec=>{
+      const p = (rec.place||"").toLowerCase();
+      if(/catalog|cataloged|arrived|british library|vatican/.test(p)) { n.catalogs.push(rec); return false; }
+      return true;
+    });
+  }
+});
+
+// ----------------- Edges -----------------
+const EDGES = [
+  // OT
+  ["proto-hebrew","dss"],
+  ["proto-hebrew","samaritan-pent"],
+  ["proto-hebrew","lxx"],
+  ["proto-hebrew","mt-tradition"],
+  ["mt-tradition","mt-aleppo"],
+  ["mt-tradition","mt-leningrad"],
+  ["mt-tradition","targums"],
+
+  // Greek OT / LXX influence
+  ["lxx","vulgate"],
+  ["lxx","lxx-trans"],
+  ["alexandrian","old-latin"],
+  ["lxx","syro-hexapla"],
+  ["alexandrian","philoxenian"],
+  ["alexandrian","harklean"],
+
+  // NT literary formation
+  ["oral-jesus","mark"],
+  ["oral-jesus","q"],
+  ["mark","matthew"],
+  ["mark","luke"],
+  ["q","matthew"],
+  ["q","luke"],
+  ["m-src","matthew"],
+  ["l-src","luke"],
+  ["paul-letters","early-papyri"],
+
+  // Manuscripts to families
+  ["early-papyri","alexandrian"],
+  ["early-papyri","western"],
+  ["old-latin","western"],
+  ["vaticanus","alexandrian"],
+  ["sinaiticus","alexandrian"],
+  ["alexandrinus","alexandrian"],
+  ["byzantine","textus-receptus"],
+
+  // Families to editions
+  ["alexandrian","westcott-hort"],
+  ["alexandrian","nestle-aland"],
+  ["western","nestle-aland"],
+  ["byzantine","nestle-aland"],
+  ["nestle-aland","ubs"],
+
+  // Latin & Syriac flows
+  ["old-latin","vulgate"],
+  ["peshitta","peshitta-trans"],
+
+  // Historic translations influenced by sources
+  ["lxx","armenian-bible"],
+  ["alexandrian","armenian-bible"],
+  ["lxx","coptic-sahidic-trans"],
+  ["alexandrian","coptic-sahidic-trans"],
+  ["lxx","geez-trans"],
+  ["alexandrian","georgian-bible"],
+  ["lxx","slavonic-trans"],
+  ["byzantine","slavonic-trans"],
+  ["alexandrian","gothic-argenteus"],
+  ["textus-receptus","luther"],
+  ["mt-leningrad","luther"],
+  ["textus-receptus","reina-valera"],
+  ["textus-receptus","kjv"],
+  ["vulgate","kjv"],
+
+  // Modern translations from modern editions
+  ["nestle-aland","niv"],
+  ["ubs","niv"],
+  ["nestle-aland","esv"],
+  ["mt-leningrad","esv"],
+  ["nestle-aland","nlt"],
+  ["mt-leningrad","nlt"],
+  ["ubs","nasb"],
+  ["nestle-aland","nasb"],
+  ["mt-leningrad","nasb"],
+  ["nestle-aland","csb"],
+  ["mt-leningrad","csb"]
+].map(([s,t])=>({source:s,target:t}));
+
+// ----------------- Layout & Scales -----------------
+const wrap = d3.select('#viz');
+const svg = wrap.append('svg').attr('width','100%').attr('height','100%');
+const gRoot = svg.append('g');
+const gGrid = gRoot.append('g');
+const gAxis = gRoot.append('g').attr('class','timeAxis');
+const gLaneLabels = gRoot.append('g');
+const gRanges = gRoot.append('g');
+const gLinks = gRoot.append('g');
+const gNodes = gRoot.append('g');
+const gEvents = gRoot.append('g');
+const gDiscover = gRoot.append('g');
+const gCatalog = gRoot.append('g');
+const gCurrent = gRoot.append('g');
+
+const tooltip = d3.select('body').append('div').attr('class','tooltip').style('opacity',0);
+
+const leftPad=18, rightPad=12, topPad=46; let laneHeight=170, laneGap=24;
+function yearMid(d){ return (d.start + (d.end ?? d.start))/2 }
+const xExtent = [-1000, 2025];
+const yearToX = d3.scaleLinear().domain(xExtent);
+const colorByType = t => ({ oral:"var(--oral)", hypothetical:"var(--hypo)", manuscript:"var(--manus)", codex:"var(--codex)", translation:"var(--trans)", family:"var(--family)", edition:"var(--edition)" }[t]||"#ccc");
+
+// Language lanes (order)
+const laneOrder = [
+  'Hebrew','Aramaic','Greek','Syriac','Latin','Coptic','Armenian','Georgian','Geʽez','Gothic','Church Slavonic','German','Spanish','English'
+];
+function laneFromLang(lang){ if(!lang) return 'Other'; const L=String(lang).split('/')[0].trim(); return laneOrder.includes(L)? L : L; }
+function laneFromDiscovery(rec){ return (rec && rec.place) ? rec.place : 'Unknown'; }
+let lanes = laneOrder.map(id=>({id,label:id}));
+const laneIndex = new Map(lanes.map((d,i)=>[d.id,i]));
+
+function resize(){
+  const {width:w, height:h} = wrap.node().getBoundingClientRect();
+  yearToX.range([leftPad, w-rightPad]);
+  svg.attr('width', w).attr('height', h);
+  drawGrid(yearToX);
+  const axisTop = d3.axisTop(yearToX)
+    .tickValues(d3.range(Math.ceil(xExtent[0]/50)*50, xExtent[1]+1, 50))
+    .tickFormat(d=> d<0? `${Math.abs(d)} BCE` : `${d} CE`);
+  gAxis.attr('transform',`translate(0, ${topPad-20})`).call(axisTop);
+  draw();
+}
+
+function drawGrid(xScale){
+  const {height:h} = wrap.node().getBoundingClientRect();
+  const step = 50;
+  const ticks = d3.range(Math.ceil(xExtent[0]/step)*step, xExtent[1]+1, step);
+  const sel = gGrid.selectAll('line.tick').data(ticks, d=>d);
+  sel.join(
+    enter => enter.append('line').attr('class','tick').attr('y1',0).attr('y2',h)
+      .attr('stroke','var(--grid)').attr('stroke-opacity',0.2).attr('stroke-width',1),
+    update => update,
+    exit => exit.remove()
+  ).attr('x1', d=> xScale(d)).attr('x2', d=> xScale(d));
+}
+
+// Position calculators (double-spaced rows)
+function computePositions(nodes){
+  const r = 5, gapY = 20; // doubled spacing
+  const groups = d3.group(nodes, d=>laneFromLang(d.lang));
+  for(const [laneId, list] of groups){
+    list.sort((a,b)=> yearMid(a) - yearMid(b));
+    const baseY = topPad + (laneIndex.get(laneId)||0)*(laneHeight+laneGap);
+    let lastX = -Infinity, row = 0;
+    list.forEach(n=>{
+      const x = yearToX(yearMid(n));
+      if(Math.abs(x - lastX) < 90){ row += 1; } else { row = 0; }
+      lastX = x;
+      n.x = x; n.y = baseY + 28 + row*(r*2 + gapY);
+      n.r = r;
+    });
+  }
+}
+function computeCityPositions(items){
+  const r=5, gapY=18;
+  const groups = d3.group(items, d=>d.lane);
+  for(const [laneId, list] of groups){
+    list.sort((a,b)=> (a.year - b.year));
+    const baseY = topPad + (laneIndex.get(laneId)||0)*(laneHeight+laneGap);
+    let lastX=-Infinity, row=0;
+    list.forEach(d=>{
+      const x = yearToX(d.year);
+      if(Math.abs(x - lastX) < 90){ row += 1; } else { row = 0; }
+      lastX = x;
+      d.x = x; d.y = baseY + 28 + row*(r*2 + gapY);
+    });
+  }
+}
+
+function formatYear(y){ return y<0? `${Math.abs(y)} BCE` : `${y} CE`; }
+function formatRange(a,b){ const f=formatYear; return (a===b||b==null)? f(a) : `${f(a)} – ${f(b)}`; }
+
+let currentTransform = d3.zoomIdentity, pointerY = null;
+const zoom = d3.zoom().scaleExtent([0.6,2.6]).on('zoom', (e)=>{ currentTransform = e.transform; gRoot.attr('transform', e.transform); updateStickyLane(e.transform); });
+svg.call(zoom);
+svg.on('mousemove', (event)=>{ pointerY = event.offsetY; updateStickyLane(currentTransform); });
+
+// Sticky lane tracker (follows mouse)
+const gSticky = svg.append('g');
+const stickyBg = gSticky.append('rect').attr('x',8).attr('y',8).attr('rx',6).attr('ry',6).attr('width',210).attr('height',22).attr('fill','#0e1633').attr('stroke','#2a3a79');
+const stickyText = gSticky.append('text').attr('x',18).attr('y',24).attr('fill','#cfe0ff').style('font-size','12px').text('');
+gSticky.style('display','none');
+function updateStickyLane(t){
+  const {height:vh} = wrap.node().getBoundingClientRect();
+  const yscreen  = (pointerY != null) ? pointerY : vh/2;
+  const ycontent = yscreen - (t ? t.y : 0);
+  const idx = Math.floor((ycontent - topPad) / (laneHeight + laneGap));
+  if (idx >= 0 && idx < lanes.length) {
+    stickyText.text(lanes[idx].label);
+    gSticky.style('display','block');
+  } else {
+    gSticky.style('display','none');
+  }
+}
+
+function draw(){
+  // Active types from filters
+  const activeTypes = new Set([...document.querySelectorAll('.f-type:checked')].map(e=>e.value));
+  const nodes = NODES.filter(n=> activeTypes.has(n.type));
+
+  // Build lane set dynamically: languages + discovery/catalog/current places with dots
+  const active = new Set();
+  nodes.forEach(n=>{
+    active.add(laneFromLang(n.lang));
+    (n.discoveries||[]).forEach(rec=> active.add(laneFromDiscovery(rec)));
+    (n.catalogs||[]).forEach(rec=> active.add(laneFromDiscovery(rec)));
+    if(n.currentPlace) active.add(laneFromDiscovery({place:n.currentPlace}));
+  });
+  const langIds = laneOrder.filter(id=>active.has(id));
+  const cityIds = [...active].filter(id=>!laneOrder.includes(id)).sort();
+  lanes = [...langIds.map(id=>({id, label:id})), ...cityIds.map(id=>({id, label:id}))];
+  laneIndex.clear(); lanes.forEach((d,i)=> laneIndex.set(d.id,i));
+
+  // Rebuild lane backgrounds/labels
+  const {width:w} = wrap.node().getBoundingClientRect();
+  gLaneLabels.selectAll('g.lane').remove();
+  const laneG = gLaneLabels.selectAll('g.lane').data(lanes).enter().append('g').attr('class','lane')
+    .attr('transform',(d,i)=>`translate(0, ${topPad + i*(laneHeight+laneGap)})`);
+  laneG.append('rect').attr('class','laneRect').attr('x',0).attr('y',0).attr('width', w).attr('height', laneHeight);
+  laneG.append('text').attr('class','laneLabel').attr('x',12).attr('y',16).text(d=>d.label);
+
+  // Compute positions
+  computePositions(nodes);
+
+  // Map ids and filter links
+  const nodeById = new Map(nodes.map(d=>[d.id,d]));
+  const links = EDGES.filter(e=> nodeById.has(e.source) && nodeById.has(e.target));
+
+  // Ranges under the node dots
+  const ranges = gRanges.selectAll('g.range').data(nodes.filter(n=> n.start!=null && n.end!=null && n.end!==n.start), d=>d.id);
+  ranges.exit().remove();
+  const rEnter = ranges.enter().append('g').attr('class','range');
+  rEnter.append('line').attr('class','rangeBar');
+  rEnter.append('line').attr('class','rangeCap capL');
+  rEnter.append('line').attr('class','rangeCap capR');
+  const rAll = rEnter.merge(ranges);
+  rAll.select('line.rangeBar')
+    .attr('x1', d=>yearToX(d.start)).attr('y1', d=>d.y + 12)
+    .attr('x2', d=>yearToX(d.end)).attr('y2', d=>d.y + 12);
+  rAll.select('line.capL')
+    .attr('x1', d=>yearToX(d.start)).attr('y1', d=>d.y + 8)
+    .attr('x2', d=>yearToX(d.start)).attr('y2', d=>d.y + 16);
+  rAll.select('line.capR')
+    .attr('x1', d=>yearToX(d.end)).attr('y1', d=>d.y + 8)
+    .attr('x2', d=>yearToX(d.end)).attr('y2', d=>d.y + 16);
+
+  // Node dots
+  const nodeSel = gNodes.selectAll('circle.nodeDot').data(nodes, d=>d.id);
+  nodeSel.exit().remove();
+  nodeSel.enter().append('circle').attr('class','nodeDot').attr('r',5)
+    .attr('fill', d=>colorByType(d.type))
+    .on('mousemove', (event,d)=>{
+      tooltip.style('opacity',1)
+        .style('left', (event.pageX+14)+'px')
+        .style('top', (event.pageY+14)+'px')
+        .html(`<div class="name">${d.label}</div>
+               <div>${formatRange(d.start,d.end)}</div>
+               <div><b>Type:</b> ${d.type}</div>
+               <div><b>Lane:</b> ${laneFromLang(d.lang)} &nbsp;•&nbsp; <b>Lang:</b> ${d.lang||'—'}</div>
+               ${d.note?`<div style="margin-top:6px;color:#dbe3ff">${d.note}</div>`:''}`);
+    })
+    .on('mouseleave', ()=> tooltip.style('opacity',0))
+    .on('click', (event,d)=> BUS.emit('focusNode',{node:d, phase:null}) )
+    .merge(nodeSel)
+      .attr('cx', d=>d.x)
+      .attr('cy', d=>d.y)
+      .attr('fill', d=>colorByType(d.type));
+
+  // Curved links between nodes
+  const linkSel = gLinks.selectAll('path.link').data(links, d=>d.source+"→"+d.target);
+  linkSel.exit().remove();
+  linkSel.enter().append('path').attr('class','link').merge(linkSel)
+    .attr('d', d=>{
+      const s = nodeById.get(d.source), t = nodeById.get(d.target);
+      const x1 = s.x, y1 = s.y; const x2 = t.x, y2 = t.y; const my = (y1+y2)/2;
+      return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+    });
+
+  // Event bars (original event intervals)
+  const evNodes = nodes.filter(d=> d.eventStart!=null && d.eventEnd!=null);
+  const evSel = gEvents.selectAll('g.evt').data(evNodes, d=>d.id);
+  evSel.exit().remove();
+  const evE = evSel.enter().append('g').attr('class','evt');
+  evE.append('line').attr('class','eventBar');
+  evE.append('line').attr('class','eventCap left');
+  evE.append('line').attr('class','eventCap right');
+  evE.append('circle').attr('class','eventDot').attr('r',4)
+    .on('mousemove', (event,d)=>{
+      tooltip.style('opacity',1).style('left', (event.pageX+14)+'px').style('top', (event.pageY+14)+'px')
+        .html(`<div class="name">Original Event — ${d.label}</div><div>${formatRange(d.eventStart,d.eventEnd)} — ${d.eventPlace||'—'}</div>${d.eventRefs?`<div style='color:#a8b6d8'>${d.eventRefs}</div>`:''}`);
+    })
+    .on('mouseleave', ()=> tooltip.style('opacity',0))
+    .on('click', (event,d)=> BUS.emit('focusNode',{node:d, phase:'event'}) );
+  const evAll = evE.merge(evSel);
+  evAll.select('line.eventBar')
+    .attr('x1', d=>yearToX(d.eventStart)).attr('y1', d=>d.y - 10)
+    .attr('x2', d=>yearToX(d.eventEnd)).attr('y2', d=>d.y - 10);
+  evAll.select('line.left')
+    .attr('x1', d=>yearToX(d.eventStart)).attr('y1', d=>d.y - 14)
+    .attr('x2', d=>yearToX(d.eventStart)).attr('y2', d=>d.y - 6);
+  evAll.select('line.right')
+    .attr('x1', d=>yearToX(d.eventEnd)).attr('y1', d=>d.y - 14)
+    .attr('x2', d=>yearToX(d.eventEnd)).attr('y2', d=>d.y - 6);
+  evAll.select('circle.eventDot').attr('cx', d=>yearToX((d.eventStart+d.eventEnd)/2)).attr('cy', d=>d.y - 10);
+
+  // Discovery & Catalog dots (in city lanes)
+  const discEvents = []; const catEvents = [];
+  nodes.forEach(n => {
+    (n.discoveries||[]).forEach(rec=>{ const ln = laneFromDiscovery(rec); if(!laneIndex.has(ln)) return; discEvents.push({ id:`${n.id}-disc-${rec.year}-${ln}`, parent:n, year:rec.year, place:rec.place, lon:rec.lon, lat:rec.lat, lane: ln, rec }); });
+    (n.catalogs||[]).forEach(rec=>{ const ln = laneFromDiscovery(rec); if(!laneIndex.has(ln)) return; catEvents.push({ id:`${n.id}-cat-${rec.year}-${ln}`, parent:n, year:rec.year, place:rec.place, lon:rec.lon, lat:rec.lat, lane: ln, rec }); });
+  });
+  computeCityPositions(discEvents);
+  computeCityPositions(catEvents);
+
+  const dLink = gDiscover.selectAll('path.discoverLink').data(discEvents, d=>d.id);
+  dLink.exit().remove();
+  dLink.enter().append('path').attr('class','discoverLink').merge(dLink)
+    .attr('d', d=>{ const s = d.parent; const x1=s.x, y1=s.y; const x2=d.x, y2=d.y; const my=(y1+y2)/2; return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`; });
+  const dDot = gDiscover.selectAll('circle.discoverDot').data(discEvents, d=>d.id);
+  dDot.exit().remove();
+  dDot.enter().append('circle').attr('class','discoverDot').attr('r',4)
+    .on('mousemove', (event,d)=>{
+      tooltip.style('opacity',1).style('left', (event.pageX+14)+'px').style('top', (event.pageY+14)+'px')
+        .html(`<div class="name">Discovery — ${d.parent.label}</div><div>${formatYear(d.year)} — ${d.place}</div><div><b>Lane:</b> ${d.lane}</div>`);
+    })
+    .on('mouseleave', ()=> tooltip.style('opacity',0))
+    .on('click', (event,d)=> BUS.emit('focusDiscovery',{node:d.parent, rec:d.rec}) )
+    .merge(dDot).attr('cx', d=>d.x).attr('cy', d=>d.y);
+
+  const cLink = gCatalog.selectAll('path.catalogLink').data(catEvents, d=>d.id);
+  cLink.exit().remove();
+  cLink.enter().append('path').attr('class','catalogLink').merge(cLink)
+    .attr('d', d=>{ const s = d.parent; const x1=s.x, y1=s.y; const x2=d.x, y2=d.y; const my=(y1+y2)/2; return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`; });
+  const cdSel = gCatalog.selectAll('circle.catalogDot').data(catEvents, d=>d.id);
+  cdSel.exit().remove();
+  cdSel.enter().append('circle').attr('class','catalogDot').attr('r',4)
+    .on('mousemove', (event,d)=>{
+      tooltip.style('opacity',1).style('left', (event.pageX+14)+'px').style('top', (event.pageY+14)+'px')
+        .html(`<div class="name">Catalog — ${d.parent.label}</div><div>${formatYear(d.year)} — ${d.place}</div><div><b>Lane:</b> ${d.lane}</div>`);
+    })
+    .on('mouseleave', ()=> tooltip.style('opacity',0))
+    .on('click', (event,d)=> BUS.emit('focusCatalog',{node:d.parent, rec:d.rec}) )
+    .merge(cdSel).attr('cx', d=>d.x).attr('cy', d=>d.y);
+
+  // Current location dots (year 2025)
+  const currentEvents = [];
+  nodes.forEach(n => {
+    if(n.currentPlace){
+      const ln = laneFromDiscovery({place:n.currentPlace}); if(!laneIndex.has(ln)) return;
+      currentEvents.push({ id:`${n.id}-cur`, parent:n, year:2025, place:n.currentPlace, lon:n.currentLon, lat:n.currentLat, lane: ln });
+    }
+  });
+  computeCityPositions(currentEvents);
+
+  const curL = gCurrent.selectAll('path.currentLink').data(currentEvents, d=>d.id);
+  curL.exit().remove();
+  curL.enter().append('path').attr('class','currentLink').merge(curL)
+    .attr('d', d=>{ const s = d.parent; const x1=s.x, y1=s.y; const x2=d.x, y2=d.y; const my=(y1+y2)/2; return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`; });
+
+  const curD = gCurrent.selectAll('circle.currentDot').data(currentEvents, d=>d.id);
+  curD.exit().remove();
+  curD.enter().append('circle').attr('class','currentDot').attr('r',4)
+    .on('mousemove', (event,d)=>{
+      tooltip.style('opacity',1).style('left',(event.pageX+14)+'px').style('top',(event.pageY+14)+'px')
+        .html(`<div class="name">Current — ${d.parent.label}</div><div>2025 — ${d.place}</div><div><b>Lane:</b> ${d.lane}</div>`);
+    })
+    .on('mouseleave', ()=> tooltip.style('opacity',0))
+    .on('click', (event,d)=> BUS.emit('focusNode',{node:d.parent, phase:null}) )
+    .merge(curD).attr('cx', d=>d.x).attr('cy', d=>d.y);
+
+  // Update Current Locations panel
+  renderLocs(nodes);
+}
+
+// Build Current Locations list
+function renderLocs(list){
+  const el = document.getElementById('refsList');
+  if(!el) return;
+  const rows = list
+    .slice()
+    .sort((a,b)=> (a.start - b.start))
+    .map(d=>{
+      const loc = d.currentPlace && d.currentPlace !== '—' ? d.currentPlace : '—';
+      return `<div class="refItem">• <b>${d.label}</b><br/><span style="color:#a8b6d8">Current:</span> ${loc}</div>`;
+    });
+  el.innerHTML = rows.join('') || '<div class="tip">No items with current locations for current filters.</div>';
+}
+
+// Search
+function doSearch(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  if(!q) return;
+  const match = NODES.find(n=> n.label.toLowerCase().includes(q));
+  if(!match) return;
+  BUS.emit('focusNode',{node:match, phase:null});
+}
+document.getElementById('btnSearch').addEventListener('click', doSearch);
+
+// Filter chips
+const filterGrid = document.getElementById('filterGrid');
+filterGrid.addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  const cb = chip.querySelector('input.f-type');
+  cb.checked = !cb.checked;
+  chip.classList.toggle('active', cb.checked);
+  draw();
+});
+for(const chip of document.querySelectorAll('.chip')){
+  const cb = chip.querySelector('input.f-type');
+  chip.classList.toggle('active', cb.checked);
+}
+
+// Reset & Export
+const zoomer = svg; // already applied
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+});
+
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const ser = new XMLSerializer();
+  const src = ser.serializeToString(svg.node());
+  const blob = new Blob([src], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='document_lineage.svg'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),0);
+});
+
+// Init
+window.addEventListener('resize', resize);
+resize();
+
+// ----------------- Globe (Orthographic, zoom + rotate) -----------------
+(function GlobeViz(){
+  const globeSvg = d3.select('#globe');
+  const infoEl = document.getElementById('globeInfo');
+  const gw = 420, gh = 420;
+  const baseScale = gw/2 - 16;
+  const projection = d3.geoOrthographic().translate([gw/2, gh/2]).scale(baseScale).clipAngle(90);
+  const path = d3.geoPath().projection(projection);
+  const sphere = {type:'Sphere'};
+
+  const gOcean = globeSvg.append('g');
+  gOcean.append('path').datum(sphere).attr('d', path).attr('fill','#07182c').attr('stroke','#10315a');
+  const gLand = globeSvg.append('g');
+  const gFocus = globeSvg.append('g');
+
+  const point = (lon,lat)=> projection([lon,lat]);
+  const greatArc = (a,b,steps=96)=>{ const interp=d3.geoInterpolate(a,b); return {type:'LineString',coordinates:d3.range(steps+1).map(t=>interp(t/steps))}; };
+  function animateRotateTo(lon,lat,dur=650){
+    const r0 = projection.rotate(); const p0 = [-r0[0], -r0[1]]; const p1 = [lon,lat];
+    const interp = d3.geoInterpolate(p0,p1);
+    d3.transition().duration(dur).tween('rotate', ()=> t => { const p = interp(t); projection.rotate([-p[0], -p[1]]); redrawGlobe(); });
+  }
+  function globeInfoHTML(d){
+    const disc = d.discoveries||[]; const cats = d.catalogs||[];
+    const discList = disc.map(rec=>`• ${formatYear(rec.year)} — ${rec.place}`).join('<br/>');
+    const catList = cats.map(rec=>`• ${formatYear(rec.year)} — ${rec.place}`).join('<br/>');
+    const eventLine = d.eventPlace? `<div><b>Original Event:</b> ${formatRange(d.eventStart??d.start,d.eventEnd??d.end)} — ${d.eventPlace}</div>` : '';
+    const eventRefsLine = d.eventRefs? `<div><b>Event Refs:</b> ${d.eventRefs}</div>` : '';
+    const compLine = d.compPlace? `<div><b>Written:</b> ${formatRange(d.start,d.end)} — ${d.compPlace}</div>` : '';
+    const curLine = d.currentPlace? `<div><b>Current:</b> 2025 — ${d.currentPlace}</div>` : '';
+    return `<div><b>${d.label}</b></div>${eventLine}${eventRefsLine}${compLine}${discList?`<div style=\"margin-top:6px\"><b>Discoveries:</b><br/>${discList}</div>`:''}${catList?`<div style=\"margin-top:6px\"><b>Cataloged:</b><br/>${catList}</div>`:''}${curLine}`;
+  }
+
+  let lastFocus = null; // {data, phase, rec}
+  function redrawGlobe(){ globeSvg.selectAll('path').attr('d', path); renderFocus(); }
+  function renderFocus(){
+    gFocus.selectAll('*').remove();
+    if(!lastFocus || !lastFocus.data) return;
+    const d = lastFocus.data; const phase = lastFocus.phase; const selRec = lastFocus.rec || null;
+    const comp = (d.compLon!=null && d.compLat!=null) ? [d.compLon, d.compLat] : null;
+    const eventPt = (d.eventLon!=null && d.eventLat!=null) ? [d.eventLon, d.eventLat] : null;
+    const curr = (d.currentLon!=null && d.currentLat!=null) ? [d.currentLon, d.currentLat] : null;
+    const attachTip = (sel, html)=> sel.on('mousemove', (event)=>{ tooltip.style('opacity',1).style('left',(event.pageX+12)+'px').style('top',(event.pageY+12)+'px').html(html); }).on('mouseleave', ()=> tooltip.style('opacity',0));
+    const halo = (pt)=>{ const p = point(pt[0], pt[1]); gFocus.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',8).attr('fill','none').attr('stroke','#fff').attr('stroke-width',1.2).attr('opacity',0.9); };
+    if(eventPt){ const p = point(eventPt[0], eventPt[1]); const c = gFocus.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',5).attr('fill','#ffcc80').attr('stroke','#0a0f1c'); attachTip(c, `<b>Original Event</b><br/>${d.eventPlace||'—'}`); c.on('click', ()=> setFocus(d,'event')); }
+    if(comp){ const p = point(comp[0], comp[1]); const c = gFocus.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',5).attr('fill','#ffd47a').attr('stroke','#0a0f1c'); attachTip(c, `<b>Written</b><br/>${d.compPlace||'—'}`); c.on('click', ()=> setFocus(d,'comp')); }
+    if(eventPt && comp){ gFocus.append('path').datum(greatArc(eventPt, comp)).attr('d', path).attr('class','eventLink'); }
+    (d.discoveries||[]).forEach(rec=>{ if(rec.lon==null||rec.lat==null) return; const q=[rec.lon, rec.lat]; if(comp){ gFocus.append('path').datum(greatArc(comp,q)).attr('d', path).attr('class','discoverLink'); } const pq = point(q[0], q[1]); const c = gFocus.append('circle').attr('cx',pq[0]).attr('cy',pq[1]).attr('r',4).attr('fill','#b3c7ff').attr('stroke','#0a0f1c'); attachTip(c, `<b>Discovery</b><br/>${rec.place}`); c.on('click', ()=> setFocus(d,'disc',rec)); });
+    (d.catalogs||[]).forEach(rec=>{ if(rec.lon==null||rec.lat==null) return; const q=[rec.lon, rec.lat]; if(comp){ gFocus.append('path').datum(greatArc(comp,q)).attr('d', path).attr('class','catalogLink'); } const pq = point(q[0], q[1]); const c = gFocus.append('circle').attr('cx',pq[0]).attr('cy',pq[1]).attr('r',4).attr('fill','#cda6ff').attr('stroke','#0a0f1c'); attachTip(c, `<b>Catalog</b><br/>${rec.place}`); c.on('click', ()=> setFocus(d,'cat',rec)); });
+    if(curr && comp){ gFocus.append('path').datum(greatArc(comp,curr)).attr('d', path).attr('class','currentLink'); }
+    if(curr){ const p = point(curr[0], curr[1]); const c = gFocus.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',4).attr('class','currentDot'); attachTip(c, `<b>Current</b><br/>${d.currentPlace||'—'}`); c.on('click', ()=> setFocus(d,'curr')); }
+    if(phase==='event' && eventPt) halo(eventPt);
+    if(phase==='comp' && comp) halo(comp);
+    if(phase==='disc' && selRec && selRec.lon!=null) halo([selRec.lon, selRec.lat]);
+    if(phase==='cat' && selRec && selRec.lon!=null) halo([selRec.lon, selRec.lat]);
+    if(phase==='curr' && curr) halo(curr);
+  }
+  function setFocus(d, phase=null, rec=null){ lastFocus = {data:d, phase, rec};
+    let center=null;
+    if(phase==='event' && d.eventLon!=null) center=[d.eventLon,d.eventLat];
+    else if(phase==='comp' && d.compLon!=null) center=[d.compLon,d.compLat];
+    else if(phase==='disc' && rec&&rec.lon!=null) center=[rec.lon,rec.lat];
+    else if(phase==='cat' && rec&&rec.lon!=null) center=[rec.lon,rec.lat];
+    else if(phase==='curr' && d.currentLon!=null) center=[d.currentLon,d.currentLat];
+    else center = d.eventLon!=null? [d.eventLon,d.eventLat] : (d.compLon!=null? [d.compLon,d.compLat] : null);
+    if(center) animateRotateTo(center[0], center[1]); else redrawGlobe();
+    infoEl.innerHTML = globeInfoHTML(d);
+  }
+
+  // Load Natural Earth land
+  d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json').then(topology=>{
+    if (window.topojson) {
+      const land = topojson.feature(topology, topology.objects.land);
+      gLand.selectAll('path.land').data([land]).join('path')
+        .attr('class','land').attr('d', path)
+        .attr('fill','#3ea76a').attr('stroke','#d7f0d8').attr('stroke-width',0.8).attr('stroke-opacity',0.95);
+      redrawGlobe();
+    }
+  }).catch(()=>{});
+
+  // Wheel zoom & drag rotate (isolated to globe)
+  const globeZoom = d3.zoom().scaleExtent([0.8,8]).on('zoom', e => { projection.scale(baseScale*e.transform.k); redrawGlobe(); });
+  globeSvg.call(globeZoom);
+  let dragLast=null; globeSvg.call(d3.drag().on('start', e=>{dragLast=[e.x,e.y];}).on('drag', e=>{ const r=projection.rotate(); const dx=e.x-dragLast[0], dy=e.y-dragLast[1]; dragLast=[e.x,e.y]; const sens=0.25; projection.rotate([r[0]+dx*sens, r[1]-dy*sens, r[2]]); redrawGlobe(); }).on('end', ()=>{dragLast=null;}));
+
+  // Buttons inside globe panel
+  document.getElementById('globeCenterEvent').addEventListener('click', ()=>{ if(!lastFocus) return; setFocus(lastFocus.data,'event'); });
+  document.getElementById('globeCenterComp').addEventListener('click', ()=>{ if(!lastFocus) return; setFocus(lastFocus.data,'comp'); });
+  document.getElementById('globeCenterDisc').addEventListener('click', ()=>{ if(!lastFocus) return; const rec=(lastFocus.data.discoveries||[])[0]; if(rec) setFocus(lastFocus.data,'disc',rec); });
+  document.getElementById('globeCenterCat').addEventListener('click', ()=>{ if(!lastFocus) return; const rec=(lastFocus.data.catalogs||[])[0]; if(rec) setFocus(lastFocus.data,'cat',rec); });
+  document.getElementById('globeCenterCur').addEventListener('click', ()=>{ if(!lastFocus) return; setFocus(lastFocus.data,'curr'); });
+
+  // BUS listeners so the tree can request focus without calling our functions
+  BUS.on('focusNode', ({node,phase})=>{ if(!node) return; setFocus(node, phase||null); });
+  BUS.on('focusDiscovery', ({node,rec})=>{ if(!node||!rec) return; setFocus(node,'disc',rec); });
+  BUS.on('focusCatalog', ({node,rec})=>{ if(!node||!rec) return; setFocus(node,'cat',rec); });
+})();
+</script>
+</body>
+</html>
